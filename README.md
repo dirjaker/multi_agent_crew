@@ -1,3 +1,20 @@
+<div align="center">
+
+# 🚀 Multi-Agent Crew
+
+### 多智能体协作系统
+
+[![Agent](https://img.shields.io/badge/Agent-4+-blue?style=flat-square)]()
+[![模式](https://img.shields.io/badge/模式-3-green?style=flat-square)]()
+[![框架](https://img.shields.io/badge/框架-CrewAI-orange?style=flat-square)]()
+[![更新](https://img.shields.io/badge/更新-2025.06-red?style=flat-square)]()
+
+*多 Agent 协作编排 · 任务分解 · 角色分配 · 结果聚合*
+
+</div>
+
+---
+
 # 🤖 Multi-Agent Crew 协作系统
 
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
@@ -158,3 +175,4 @@ python examples/hierarchical_crew.py
 ## 📄 License
 
 MIT License
+
