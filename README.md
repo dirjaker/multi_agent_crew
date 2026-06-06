@@ -15,11 +15,6 @@
 
 ---
 
-# 🤖 Multi-Agent Crew 协作系统
-
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
 > 多智能体协作框架 - 让 AI Agent 组成团队，协作完成复杂任务
 
 ## ✨ 特性
