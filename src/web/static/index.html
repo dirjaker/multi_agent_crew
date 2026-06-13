@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Agent Crew - 多智能体协作仪表盘</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+header{background:#161b22;border-bottom:1px solid #30363d;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:20px;color:#58a6ff;font-weight:600}
+header .status{display:flex;align-items:center;gap:8px;font-size:13px;color:#8b949e}
+header .dot{width:8px;height:8px;border-radius:50%;background:#3fb950}
+.container{max-width:1200px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px}
+.card h2{font-size:16px;color:#58a6ff;margin-bottom:16px;font-weight:600}
+.card.full{grid-column:1/-1}
+label{display:block;font-size:13px;color:#8b949e;margin-bottom:6px}
+textarea,input[type=text]{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px 12px;color:#c9d1d9;font-size:14px;resize:vertical;font-family:inherit}
+textarea:focus,input:focus{outline:none;border-color:#58a6ff}
+textarea{min-height:60px}
+select{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px 12px;color:#c9d1d9;font-size:14px;font-family:inherit}
+button{background:#238636;color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:14px;cursor:pointer;font-weight:500;margin-top:10px}
+button:hover{background:#2ea043}
+button.secondary{background:#21262d;border:1px solid #30363d;color:#c9d1d9}
+button.secondary:hover{background:#30363d}
+button.danger{background:#da3633}
+button.danger:hover{background:#f85149}
+.result{margin-top:12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;font-size:13px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;display:none;line-height:1.6}
+.result.show{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.stat-box{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;text-align:center}
+.stat-box .num{font-size:28px;font-weight:700;color:#58a6ff}
+.stat-box .lbl{font-size:12px;color:#8b949e;margin-top:4px}
+.list-box{max-height:200px;overflow-y:auto;margin-top:10px}
+.list-item{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px;margin-bottom:8px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.list-item .role{color:#58a6ff;font-weight:600}
+.list-item .state{font-size:12px;padding:2px 8px;border-radius:12px}
+.state-idle{background:#21262d;color:#8b949e}
+.state-working{background:#d29922;color:#000}
+.state-completed{background:#238636;color:#fff}
+.state-error{background:#da3633;color:#fff}
+.state-pending{background:#21262d;color:#8b949e}
+.state-in_progress{background:#d29922;color:#000}
+.state-failed{background:#da3633;color:#fff}
+.footer{text-align:center;padding:24px;font-size:12px;color:#484f58}
+.mt{margin-top:8px}
+@media(max-width:768px){.container{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+    <h1>Multi-Agent Crew - 多智能体协作仪表盘</h1>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">检查中...</span></div>
+</header>
+
+<div class="container">
+    <!-- 统计 -->
+    <div class="card full">
+        <h2>系统状态</h2>
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-box"><div class="num" id="statAgents">0</div><div class="lbl">Agent 数量</div></div>
+            <div class="stat-box"><div class="num" id="statTasks">0</div><div class="lbl">任务数量</div></div>
+            <div class="stat-box"><div class="num" id="statCrews">0</div><div class="lbl">Crew 数量</div></div>
+        </div>
+        <button class="secondary" onclick="loadStats()" style="margin-top:12px">刷新状态</button>
+        <button class="danger" onclick="resetAll()" style="margin-left:8px">重置全部</button>
+    </div>
+
+    <!-- 创建 Agent -->
+    <div class="card">
+        <h2>创建 Agent</h2>
+        <label>角色</label>
+        <input type="text" id="agentRole" placeholder="研究员">
+        <label class="mt">目标</label>
+        <input type="text" id="agentGoal" placeholder="收集并分析 AI 趋势资料">
+        <label class="mt">背景故事</label>
+        <textarea id="agentBackstory" placeholder="你是一位资深研究专家..."></textarea>
+        <button onclick="createAgent()">创建 Agent</button>
+        <div class="result" id="agentResult"></div>
+    </div>
+
+    <!-- 创建任务 -->
+    <div class="card">
+        <h2>创建任务</h2>
+        <label>任务描述</label>
+        <textarea id="taskDesc" placeholder="研究 2025 年 AI 趋势"></textarea>
+        <label class="mt">指派 Agent (角色名)</label>
+        <input type="text" id="taskAgent" placeholder="研究员">
+        <button onclick="createTask()">创建任务</button>
+        <div class="result" id="taskResult"></div>
+    </div>
+
+    <!-- 创建 Crew -->
+    <div class="card">
+        <h2>创建 Crew</h2>
+        <label>Crew 名称</label>
+        <input type="text" id="crewName" placeholder="研究团队">
+        <label class="mt">Agent 角色 (逗号分隔)</label>
+        <input type="text" id="crewAgents" placeholder="研究员, 分析师">
+        <label class="mt">任务描述 (逗号分隔)</label>
+        <textarea id="crewTasks" placeholder="收集资料, 分析数据"></textarea>
+        <label class="mt">执行模式</label>
+        <select id="crewProcess">
+            <option value="sequential">顺序执行</option>
+            <option value="parallel">并行执行</option>
+            <option value="hierarchical">层级管理</option>
+        </select>
+        <button onclick="createCrew()">创建 Crew</button>
+        <div class="result" id="crewResult"></div>
+    </div>
+
+    <!-- 执行 Crew -->
+    <div class="card">
+        <h2>执行 Crew</h2>
+        <label>选择 Crew</label>
+        <select id="runCrewSelect"><option value="">-- 请先创建 Crew --</option></select>
+        <button class="secondary" onclick="refreshCrewSelect()" style="margin-top:4px">刷新列表</button>
+        <br>
+        <button onclick="runCrew()">执行任务</button>
+        <div class="result" id="runResult"></div>
+    </div>
+
+    <!-- Agent 列表 -->
+    <div class="card full">
+        <h2>Agent / 任务列表</h2>
+        <button class="secondary" onclick="loadLists()">刷新列表</button>
+        <div class="list-box" id="agentList"></div>
+        <div class="list-box" id="taskList" style="margin-top:12px"></div>
+    </div>
+</div>
+
+<div class="footer">Multi-Agent Crew - 多智能体协作系统</div>
+
+<script>
+const API = '';
+
+async function api(method, path, body) {
+    const opts = {method, headers:{'Content-Type':'application/json'}};
+    if(body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + path, opts);
+    return r.json();
+}
+
+function show(id, data) {
+    const el = document.getElementById(id);
+    el.classList.add('show');
+    el.textContent = JSON.stringify(data, null, 2);
+}
+
+async function checkHealth() {
+    try {
+        await api('GET', '/api/health');
+        document.getElementById('statusDot').style.background = '#3fb950';
+        document.getElementById('statusText').textContent = '服务运行中';
+    } catch(e) {
+        document.getElementById('statusDot').style.background = '#da3633';
+        document.getElementById('statusText').textContent = '服务不可用';
+    }
+}
+
+async function loadStats() {
+    const d = await api('GET', '/api/stats');
+    document.getElementById('statAgents').textContent = d.agents || 0;
+    document.getElementById('statTasks').textContent = d.tasks || 0;
+    document.getElementById('statCrews').textContent = d.crews || 0;
+}
+
+async function createAgent() {
+    const role = document.getElementById('agentRole').value;
+    const goal = document.getElementById('agentGoal').value;
+    const backstory = document.getElementById('agentBackstory').value;
+    if(!role || !goal) return;
+    const r = await api('POST', '/api/agents', {role, goal, backstory});
+    show('agentResult', r);
+    loadStats();
+}
+
+async function createTask() {
+    const description = document.getElementById('taskDesc').value;
+    const agent_role = document.getElementById('taskAgent').value;
+    if(!description || !agent_role) return;
+    const r = await api('POST', '/api/tasks', {description, agent_role});
+    show('taskResult', r);
+    loadStats();
+}
+
+async function createCrew() {
+    const name = document.getElementById('crewName').value;
+    const agent_roles = document.getElementById('crewAgents').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const task_descriptions = document.getElementById('crewTasks').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const process = document.getElementById('crewProcess').value;
+    if(!name || !agent_roles.length || !task_descriptions.length) return;
+    const r = await api('POST', '/api/crews', {name, agent_roles, task_descriptions, process});
+    show('crewResult', r);
+    loadStats();
+    refreshCrewSelect();
+}
+
+function refreshCrewSelect() {
+    api('GET', '/api/crews').then(d => {
+        const sel = document.getElementById('runCrewSelect');
+        sel.innerHTML = '';
+        if(d.crews && d.crews.length) {
+            d.crews.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                opt.textContent = `${c.name} (${c.process})`;
+                sel.appendChild(opt);
+            });
+        } else {
+            sel.innerHTML = '<option value="">-- 请先创建 Crew --</option>';
+        }
+    });
+}
+
+async function runCrew() {
+    const crew_name = document.getElementById('runCrewSelect').value;
+    if(!crew_name) return;
+    show('runResult', {message: '执行中...'});
+    const r = await api('POST', '/api/crews/run', {crew_name});
+    show('runResult', r);
+    loadStats();
+}
+
+async function loadLists() {
+    const [agentsD, tasksD] = await Promise.all([api('GET', '/api/agents'), api('GET', '/api/tasks')]);
+    const aList = document.getElementById('agentList');
+    aList.innerHTML = '<div style="font-size:13px;color:#8b949e;margin-bottom:8px">Agents:</div>';
+    (agentsD.agents||[]).forEach(a => {
+        aList.innerHTML += `<div class="list-item"><span class="role">${a.role}</span><span>${a.goal}</span><span class="state state-${a.state}">${a.state}</span></div>`;
+    });
+    const tList = document.getElementById('taskList');
+    tList.innerHTML = '<div style="font-size:13px;color:#8b949e;margin-bottom:8px">Tasks:</div>';
+    (tasksD.tasks||[]).forEach(t => {
+        tList.innerHTML += `<div class="list-item"><span style="flex:1">${t.description}</span><span style="color:#8b949e;font-size:12px">${t.agent||''}</span><span class="state state-${t.status}">${t.status}</span></div>`;
+    });
+}
+
+async function resetAll() {
+    if(!confirm('确定重置所有数据?')) return;
+    await api('DELETE', '/api/reset');
+    loadStats();
+    loadLists();
+}
+
+checkHealth();
+loadStats();
+</script>
+</body>
+</html>

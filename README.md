@@ -171,3 +171,57 @@ python examples/hierarchical_crew.py
 
 MIT License
 
+
+---
+
+## Web 界面
+
+基于 FastAPI 的 REST API 与暗色主题仪表盘。
+
+### 启动
+
+```bash
+python src/web/app.py
+# 访问 http://localhost:8082
+```
+
+### API 接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/agents` | POST | 创建 Agent |
+| `/api/agents` | GET | 列出所有 Agent |
+| `/api/tasks` | POST | 创建任务 |
+| `/api/tasks` | GET | 列出所有任务 |
+| `/api/crews` | POST | 创建 Crew |
+| `/api/crews` | GET | 列出所有 Crew |
+| `/api/crews/run` | POST | 执行 Crew |
+| `/api/stats` | GET | 系统统计 |
+| `/api/reset` | DELETE | 重置全部数据 |
+
+### 仪表盘
+
+暗色主题仪表盘，支持:
+- 创建和管理 Agent (角色、目标、背景故事)
+- 创建和分配任务
+- 组建 Crew 并选择执行模式 (顺序/并行/层级)
+- 一键执行 Crew 并查看结果
+- 实时状态面板
+
+---
+
+## macOS 应用
+
+### tkinter 桌面版
+
+```bash
+python src/macos/app.py
+```
+
+### py2app 打包
+
+```bash
+# 在 macOS 上执行
+python packaging/py2app_setup.py py2app
+# 产物位于 dist/Multi-Agent Crew.app
+```
