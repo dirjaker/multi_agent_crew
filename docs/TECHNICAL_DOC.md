@@ -8,9 +8,11 @@ Multi-Agent Crew 是一个多智能体协作框架，支持多个 AI Agent 组�
 
 - **多种协作模式**：顺序执行、并行执行、层级管理
 - **灵活的 Agent 定义**：角色、目标、背景故事、工具
-- **任务依赖管理**：支持任务间的依赖关系
+- **任务依赖管理**：DAG 结构的任务间依赖关系
 - **记忆系统**：短期记忆 + 长期记忆
-- **工具系统**：可扩展的工具注册机制
+- **工具系统**：可扩展的工具注册机制，含安全沙箱
+- **Web API**：FastAPI REST 接口
+- **桌面 GUI**：tkinter macOS 应用
 
 ### 1.2 应用场景
 
@@ -162,7 +164,30 @@ class Crew:
 - `AnalysisTool`: 分析工具
 - `WritingTool`: 写作工具
 - `CodeTool`: 代码工具
-- `CalculatorTool`: 计算工具
+- `CalculatorTool`: 计算工具（含安全沙箱）
+
+安全沙箱函数：
+- `safe_eval()`: 安全的表达式求值
+- `safe_exec()`: 安全的代码执行
+
+### 3.5 Web API (`src/web/app.py`)
+
+基于 FastAPI 的 REST API：
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/` | GET | Web 前端页面 |
+| `/api/health` | GET | 健康检查 |
+| `/api/agents` | POST/GET | 创建/列出 Agent |
+| `/api/tasks` | POST/GET | 创建/列出任务 |
+| `/api/crews` | POST/GET | 创建/列出 Crew |
+| `/api/crews/run` | POST | 执行 Crew |
+| `/api/stats` | GET | 系统统计 |
+| `/api/reset` | DELETE | 重置数据 |
+
+### 3.6 桌面 GUI (`src/macos/app.py`)
+
+tkinter 桌面应用，三个 Tab 页：创建 Agent、创建任务、创建并执行 Crew。
 
 ## 4. 使用指南
 
@@ -195,6 +220,7 @@ crew = create_crew(
 )
 
 result = crew.kickoff()
+print(result.summary())
 ```
 
 ### 4.2 自定义工具
@@ -233,7 +259,7 @@ ReAct (Reasoning + Acting) 是目前最成熟的 Agent 范式：
 使用 DAG（有向无环图）管理任务依赖：
 - 支持串行依赖
 - 支持并行分支
-- 自动检测循环依赖
+- 通过 `is_ready()` 检查依赖完成状态
 
 ## 6. 扩展点
 
@@ -249,17 +275,22 @@ ReAct (Reasoning + Acting) 是目前最成熟的 Agent 范式：
 
 替换 `Agent.think()` 方法，调用真实的 LLM API。
 
+### 6.4 添加自定义工具
+
+继承 `Tool` 类，实现 `_execute` 方法。
+
 ## 7. 已知限制
 
 - 当前使用模拟 LLM，未实际调用 API
 - 工具执行是模拟的，未实现真实功能
-- 无持久化存储
-- 无错误恢复机制
+- 内存中的全局状态无持久化
+- 并行执行存在线程安全风险（Agent 共享状态）
 
 ## 8. 后续计划
 
 - [ ] 集成 DeepSeek/OpenAI API
 - [ ] 添加向量记忆存储
-- [ ] 实现工具的沙箱执行
-- [ ] 添加 Web UI
+- [ ] 实现工具的沙箱执行增强
+- [ ] 添加 Web 可视化编辑器
 - [ ] 支持流式输出
+- [ ] 单元测试覆盖
