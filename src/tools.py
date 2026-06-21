@@ -11,8 +11,54 @@
 - 交互工具：用户交互
 """
 
+import ast
 from typing import Any, Dict, List
 from .agent import Tool
+
+
+SAFE_BUILTINS = {
+    'abs': abs, 'all': all, 'any': any, 'bool': bool, 'dict': dict,
+    'enumerate': enumerate, 'filter': filter, 'float': float, 'frozenset': frozenset,
+    'getattr': getattr, 'hasattr': hasattr, 'hash': hash, 'int': int,
+    'isinstance': isinstance, 'issubclass': issubclass, 'iter': iter, 'len': len,
+    'list': list, 'map': map, 'max': max, 'min': min, 'next': next,
+    'object': object, 'print': print, 'property': property, 'range': range,
+    'repr': repr, 'reversed': reversed, 'round': round, 'set': set,
+    'slice': slice, 'sorted': sorted, 'str': str, 'sum': sum,
+    'tuple': tuple, 'type': type, 'zip': zip, 'True': True, 'False': False, 'None': None,
+}
+
+
+def safe_exec(code: str, context: dict = None) -> dict:
+    """Safe exec: no imports, no dunder access, no dangerous builtins"""
+    dangerous = ['import', '__import__', 'eval(', 'exec(', 'compile(', 'open(',
+                 'os.', 'sys.', 'subprocess', 'shutil', 'pathlib', '__builtins__',
+                 '__globals__', '__locals__', 'getattr(', 'setattr(', 'delattr(']
+    for d in dangerous:
+        if d in code:
+            raise ValueError(f"Blocked dangerous pattern: {d}")
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            raise ValueError("Import statements not allowed")
+    sandbox = {'__builtins__': SAFE_BUILTINS}
+    if context:
+        sandbox.update(context)
+    exec(compile(tree, '<sandbox>', 'exec'), sandbox)
+    return {k: v for k, v in sandbox.items() if not k.startswith('_')}
+
+
+def safe_eval(expr: str, context: dict = None) -> any:
+    """Safe eval: no imports, no dunder access"""
+    dangerous = ['import', '__import__', 'eval(', 'exec(', 'compile(', 'open(',
+                 'os.', 'sys.', 'subprocess', '__builtins__', '__globals__']
+    for d in dangerous:
+        if d in expr:
+            raise ValueError(f"Blocked dangerous pattern: {d}")
+    sandbox = {'__builtins__': SAFE_BUILTINS}
+    if context:
+        sandbox.update(context)
+    return eval(expr, sandbox)
 
 
 class SearchTool(Tool):
@@ -89,7 +135,7 @@ class CalculatorTool(Tool):
     def _calculate(self, expression: str = "", **kwargs) -> str:
         """执行计算"""
         try:
-            result = eval(expression)  # 仅用于演示，实际应使用安全的计算库
+            result = safe_eval(expression)
             return f"计算结果: {expression} = {result}"
         except Exception as e:
             return f"计算错误: {e}"
